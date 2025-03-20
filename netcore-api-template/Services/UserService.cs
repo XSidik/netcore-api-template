@@ -64,6 +64,10 @@ public class UserService : IUserService
             if (existingUser == null)
                 return false;
 
+            // Preserve the original Create value
+            user.CreatedAt = existingUser.CreatedAt;
+            user.CreatedBy = existingUser.CreatedBy;
+
             _context.Entry(existingUser).CurrentValues.SetValues(user);
             await _context.SaveChangesAsync();
             return true;

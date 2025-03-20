@@ -1,17 +1,15 @@
-namespace netcore_api_template.Helpers
+namespace netcore_api_template.Helpers;
+public static class PasswordHasher
 {
-    public static class PasswordHasher
+    // Hash a password
+    public static string HashPassword(string password)
     {
-        // Hash a password
-        public static string HashPassword(string password)
-        {
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
 
-        // Verify a password
-        public static bool VerifyPassword(string password, string hashedPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
-        }
+    // Verify a password
+    public static bool VerifyPassword(string password, string hashedPassword)
+    {
+        return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
     }
 }
