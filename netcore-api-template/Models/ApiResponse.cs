@@ -7,7 +7,7 @@ public class ApiResponse<T>
     public T? Data { get; set; }
 }
 
-public class PaginatedApiResponse<T> : ApiResponse<T>
+public class ApiResponsePaginated<T> : ApiResponse<T>
 {
     public int TotalCount { get; set; }
     public int PageNumber { get; set; }

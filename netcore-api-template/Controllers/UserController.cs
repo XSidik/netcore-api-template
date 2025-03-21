@@ -19,17 +19,11 @@ public class UserController(
 {
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetUsers()
+    public async Task<IActionResult> GetUsers([FromQuery] QueryParameters queryParams)
     {
         try
         {
-            var users = await userService.All();
-            return Ok(new ApiResponse<IEnumerable<UserDataDto>>
-            {
-                Success = true,
-                Data = users,
-                Message = "List user retrieved successfully."
-            });
+            return Ok(await userService.All(queryParams));
         }
         catch (Exception ex)
         {

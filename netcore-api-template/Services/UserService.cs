@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using netcore_api_template.Data;
@@ -6,7 +7,7 @@ using netcore_api_template.Models;
 namespace netcore_api_template.Services;
 public interface IUserService
 {
-    Task<List<UserDataDto>> All();
+    Task<ApiResponsePaginated<List<UserDataDto>>> All(QueryParameters queryParams);
     Task<UserDataDto> GetById(Guid id);
     Task<bool> Create(User user);
     Task<bool> Update(User user);
@@ -28,11 +29,52 @@ public class UserService : IUserService
         _mapper = mapper;
     }
 
-    public async Task<List<UserDataDto>> All()
+    public async Task<ApiResponsePaginated<List<UserDataDto>>> All(QueryParameters queryParams)
     {
-        var data = await _context.Users.Where(u => u.IsDelete == false).OrderByDescending(u => u.UpdatedAt != null ? u.UpdatedAt : u.CreatedAt).ToListAsync();
-        var dataDto = _mapper.Map<List<UserDataDto>>(data);
-        return dataDto;
+        var query = _context.Users.Where(u => u.IsDelete == false).AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Filter))
+        {
+            query = query.Where(u => EF.Functions.Like(u.Name, $"%{queryParams.Filter}%") ||
+                                    EF.Functions.Like(u.Email, $"%{queryParams.Filter}%"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Sort))
+        {
+            var isDescending = queryParams.Sort.StartsWith('-');
+            var sortBy = isDescending ? queryParams.Sort[1..] : queryParams.Sort;
+            sortBy = char.ToUpper(sortBy[0]) + sortBy[1..];
+
+            query = isDescending
+                ? query.OrderByDescending(x => EF.Property<object>(x, sortBy))
+                : query.OrderBy(x => EF.Property<object>(x, sortBy));
+        }
+
+        var pagedData = await query.Skip((queryParams.PageNumber - 1) * queryParams.PageSize).
+                        Take(queryParams.PageSize).
+                        Select(u => new UserDataDto
+                        {
+                            Id = u.Id,
+                            Name = u.Name,
+                            Email = u.Email,
+                            CreatedAt = u.CreatedAt,
+                            CreatedBy = u.CreatedBy,
+                            CreatedByName = _context.Users.Where(x => x.Id == u.CreatedBy).FirstOrDefault()!.Name,
+                            UpdatedAt = u.UpdatedAt.HasValue ? u.UpdatedAt.Value : null,
+                            UpdatedBy = u.UpdatedBy,
+                            UpdatedByName = _context.Users.Where(x => x.Id == u.UpdatedBy).FirstOrDefault()!.Name,
+                            IsActive = u.IsActive
+                        }).ToListAsync();
+
+        return new ApiResponsePaginated<List<UserDataDto>>
+        {
+            Success = true,
+            Message = "List user retrieved successfully.",
+            Data = pagedData,
+            TotalCount = await query.CountAsync(),
+            PageNumber = queryParams.PageNumber,
+            PageSize = queryParams.PageSize
+        };
     }
 
     public async Task<UserDataDto> GetById(Guid id)
