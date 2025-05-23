@@ -1,0 +1,17 @@
+version: '3'
+services:
+  netcore-api-template:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "5005:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    restart: always
+    networks:
+      - netcore_api_tempalte
+
+networks:
+  netcore_api_tempalte:
+    external: true
